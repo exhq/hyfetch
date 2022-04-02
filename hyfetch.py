@@ -39,7 +39,7 @@ def get_args():
     parser.add_argument('-k', '--key', default=config.get('base', 'api-key', fallback=None),
                         help='Set which hypixel api key to use')
     parser.add_argument('--save-key', help='Save an api-key to your config')
-    parser.add_argument('-b', '--bedwars', '--bed-wars' '--bw', action='store_const', const='bedwars', dest='mode',
+    parser.add_argument('-b', '--bedwars', '--bed-wars', '--bw', action='store_const', const='bedwars', dest='mode',
                         help='View bedwars stats')
     parser.add_argument('-g', '--general', action='store_const', const='general', dest='mode',
                         help='View general stats')
