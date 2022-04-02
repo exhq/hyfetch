@@ -39,13 +39,15 @@ def get_args():
     parser.add_argument('-k', '--key', default=config.get('base', 'api-key', fallback=None),
                         help='Set which hypixel api key to use')
     parser.add_argument('--save-key', help='Save an api-key to your config')
-    parser.add_argument('-b', '--bedwars', '--bed-wars', '--bw', action='store_const', const='bedwars', dest='mode',
+    parser.add_argument('-b', '--bedwars', '--bed-wars' , '--bw', action='store_const', const='bedwars', dest='mode',
                         help='View bedwars stats')
     parser.add_argument('-g', '--general', action='store_const', const='general', dest='mode',
                         help='View general stats')
     parser.add_argument('ign', help='IGN of the player you want to query', nargs='*')
     parser.add_argument('--sw', '--skywars', action='store_const', const='skywars', dest='mode',
                         help='View skywars stats')
+    parser.add_argument('--pit', '-p', action='store_const', const='pit', dest='mode',
+                        help='View pit stats')
     return parser.parse_args()
 
 
@@ -83,29 +85,52 @@ async def get_moj_info(session, name):
 async def bedwars(args, player, hypixel):
     bedwarsstats = player.stats.bedwars
     rank = player.rank
-    return [
-        ("games played", bedwarsstats.games_played),
-        ("kdr",
-         f"{round(bedwarsstats.kills / bedwarsstats.deaths, 2)} (kills: {bedwarsstats.kills}, deaths: {bedwarsstats.deaths})"),
-        ("fkdr",
-         f"{round(bedwarsstats.final_kills / bedwarsstats.final_deaths, 2)} (final kills: {bedwarsstats.final_kills}, final deaths: {bedwarsstats.final_deaths})"),
-        ("beds broken", bedwarsstats.beds_broken),
-        ("beds lost", bedwarsstats.beds_lost)
-    ]
+    if not hasattr(bedwarsstats, 'games_played'):
+        return [
+         ("this player has never played pits", "literal")
+        ]
+    else:
+        return [
+            ("games played", bedwarsstats.games_played),
+            ("kdr",
+             f"{round(bedwarsstats.kills / bedwarsstats.deaths, 2)} (kills: {bedwarsstats.kills}, deaths: {bedwarsstats.deaths})"),
+            ("fkdr",
+             f"{round(bedwarsstats.final_kills / bedwarsstats.final_deaths, 2)} (final kills: {bedwarsstats.final_kills}, final deaths: {bedwarsstats.final_deaths})"),
+            ("beds broken", bedwarsstats.beds_broken),
+            ("beds lost", bedwarsstats.beds_lost)
+        ]
 
+
+async def pit(args, player, hypixel):
+    pitstats = player.stats.pit
+    rank = player.rank
+    #check if stats.pits has any attributes
+    if not hasattr(pitstats, 'games_played'):
+        return [
+         ("this player has never played pits", "literal")
+        ]
+    else:
+        return [
+            ("coins", pitstats.coins),
+        ]
 
 async def skywars(args, player, hypixel):
     skywarsstats = player.stats.skywars
     rank = player.rank
-    return [
-        ("games played", skywarsstats.games_played),
-        ("kdr",
-         f"{round(skywarsstats.kills / skywarsstats.deaths, 2)} (kills: {skywarsstats.kills}, deaths: {skywarsstats.deaths})"),
-        ("tokens", skywarsstats.tokens),
-        ("souls: ", skywarsstats.souls),
-        ("wins", skywarsstats.wins),
-        ("losses", skywarsstats.losses),
-    ]
+    if not hasattr(skywarsstats, 'games_played'):
+        return [
+         ("this player has never played pits", "literal")
+        ]
+    else:
+        return [
+            ("games played", skywarsstats.games_played),
+            ("kdr",
+             f"{round(skywarsstats.kills / skywarsstats.deaths, 2)} (kills: {skywarsstats.kills}, deaths: {skywarsstats.deaths})"),
+            ("tokens", skywarsstats.tokens),
+            ("souls: ", skywarsstats.souls),
+            ("wins", skywarsstats.wins),
+            ("losses", skywarsstats.losses),
+        ]
 
 
 async def general(args, player, hypixel: asyncpixel.Hypixel):
@@ -150,7 +175,10 @@ def render_stat(arg):
 
 
 def render_stat_line(stat_line):
-    return f"{stat_line[0]}: {render_stat(stat_line[1])}"
+    if stat_line[1] == "literal":
+        return f"{stat_line[0]}"
+    else:
+        return f"{stat_line[0]}: {render_stat(stat_line[1])}"
 
 
 MC_COLORS = {
@@ -199,7 +227,7 @@ async def render_lines(player, username, image, stat_lines):
             r'\+',
             color_code(player.raw.get('rankPlusColor', DEFAULT_PLUS_COLOR.get(rankid))) + '+',
             player.rank) + color_code(None)
-    print(f"        ({rank}) {username}'s Bedwars Stats:")
+    print(f"        ({rank}) {username}")
     for i in range(8):
         print(f"{image_lines[i]}\033[0m {render_stat_line(stat_lines[i]) if i < len(stat_lines) else ''}")
 
