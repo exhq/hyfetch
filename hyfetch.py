@@ -123,10 +123,14 @@ async def general(args, player, hypixel: asyncpixel.Hypixel):
     ]
 
 
-def color_code(color, backupcolor):
-    r, g, b, a = color
-    if backupcolor[3]:
-        r, g, b, a = backupcolor
+def color_code(color, backupcolor=None):
+    if isinstance(color, str):
+        color = MC_COLORS.get(color)
+    if not color:
+        return f'\033[0m'
+    r, g, b = color[:3]
+    if backupcolor and backupcolor[3]:
+        r, g, b = backupcolor[:3]
     return f'\033[38;2;{r};{g};{b}m'
 
 
@@ -149,13 +153,53 @@ def render_stat_line(stat_line):
     return f"{stat_line[0]}: {render_stat(stat_line[1])}"
 
 
+MC_COLORS = {
+    'BLACK': (0, 0, 0),
+    'DARK_BLUE': (0, 0, 170),
+    'DARK_GREEN': (0, 170, 0),
+    'DARK_AQUA': (0, 170, 170),
+    'DARK_RED': (170, 0, 0),
+    'DARK_PURPLE': (170, 0, 170),
+    'GOLD': (255, 170, 0),
+    'GRAY': (170, 170, 170),
+    'GREY': (170, 170, 170),
+    'DARK_GRAY': (85, 85, 85),
+    'DARK_GREY': (85, 85, 85),
+    'BLUE': (85, 85, 255),
+    'GREEN': (85, 255, 85),
+    'AQUA': (85, 255, 255),
+    'RED': (255, 85, 85),
+    'LIGHT_PURPLE': (255, 85, 255),
+    'YELLOW': (255, 255, 85),
+    'WHITE': (255, 255, 255),
+}
+RANK_COLORS = {
+    'VIP': 'GREEN',
+    'VIP_PLUS': 'GREEN',
+    'MVP': 'AQUA',
+    'MVP_PLUS': 'AQUA',
+    'SUPERSTAR': 'AQUA',
+}
+DEFAULT_PLUS_COLOR = {
+    "VIP_PLUS": 'GOLD',
+    'MVP_PLUS': 'RED',
+    'SUPERSTAR': 'RED',
+}
+
+
 async def render_lines(player, username, image, stat_lines):
     image_lines = [
         ''.join(f'{color_code(image.getpixel((x + 8, i + 8)), image.getpixel((x + 40, i + 8)))}██' for x in range(8))
         for i in range(8)
     ]
-
-    print(f"        ({player.rank}) {username}'s Bedwars Stats:")
+    rankid = player.raw.get('newPackageRank')
+    rank = "non"
+    if rankid:
+        rank = color_code(RANK_COLORS.get(rankid)) + re.sub(
+            r'\+',
+            color_code(player.raw.get('rankPlusColor', DEFAULT_PLUS_COLOR.get(rankid))) + '+',
+            player.rank) + color_code(None)
+    print(f"        ({rank}) {username}'s Bedwars Stats:")
     for i in range(8):
         print(f"{image_lines[i]}\033[0m {render_stat_line(stat_lines[i]) if i < len(stat_lines) else ''}")
 
