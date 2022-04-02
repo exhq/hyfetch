@@ -49,7 +49,7 @@ def get_args():
     return parser.parse_args()
 
 
-async def main():
+async def amain():
     args = get_args()
     if args.save_key:
         f = xdg.xdg_config_home() / 'hyfetch' / 'config'
@@ -175,4 +175,9 @@ async def show_fetch(args):
     await hypixel.close()
 
 
-asyncio.run(main())
+def main():
+    asyncio.run(amain())
+
+
+if __name__ == '__main__':
+    main()
