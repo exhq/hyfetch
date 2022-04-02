@@ -107,7 +107,7 @@ async def duels(args, player, hypixel):
     #check if stats.pits has any attributes
     if not hasattr(duelstats, 'coins'):
         return [
-         ("this player has never played pit", "literal")
+         ("this player has never played duel", "literal")
         ]
     else:
         return [
