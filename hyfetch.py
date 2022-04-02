@@ -1,5 +1,6 @@
 #!/usr/bin/env python3
 import base64
+import datetime
 import io
 import os
 import re
@@ -79,61 +80,84 @@ async def get_moj_info(session, name):
         return resp['uuid'], resp['username'], image
 
 
-
-
-async def bedwars(args, player):
+async def bedwars(args, player, hypixel):
     bedwarsstats = player.stats.bedwars
     rank = player.rank
     return [
         ("games played", bedwarsstats.games_played),
-        ("kdr", f"{round(bedwarsstats.kills / bedwarsstats.deaths, 2)} (kills: {bedwarsstats.kills}, deaths: {bedwarsstats.deaths})"),
-        ("fkdr", f"{round(bedwarsstats.final_kills / bedwarsstats.final_deaths, 2)} (final kills: {bedwarsstats.final_kills}, final deaths: {bedwarsstats.final_deaths})"),
+        ("kdr",
+         f"{round(bedwarsstats.kills / bedwarsstats.deaths, 2)} (kills: {bedwarsstats.kills}, deaths: {bedwarsstats.deaths})"),
+        ("fkdr",
+         f"{round(bedwarsstats.final_kills / bedwarsstats.final_deaths, 2)} (final kills: {bedwarsstats.final_kills}, final deaths: {bedwarsstats.final_deaths})"),
         ("beds broken", bedwarsstats.beds_broken),
         ("beds lost", bedwarsstats.beds_lost)
     ]
 
-async def skywars(args, player):
+
+async def skywars(args, player, hypixel):
     skywarsstats = player.stats.skywars
     rank = player.rank
     return [
         ("games played", skywarsstats.games_played),
-        ("kdr", f"{round(skywarsstats.kills / skywarsstats.deaths, 2)} (kills: {skywarsstats.kills}, deaths: {skywarsstats.deaths})"),
-        ("tokens", skywarsstats.tokens ),
+        ("kdr",
+         f"{round(skywarsstats.kills / skywarsstats.deaths, 2)} (kills: {skywarsstats.kills}, deaths: {skywarsstats.deaths})"),
+        ("tokens", skywarsstats.tokens),
         ("souls: ", skywarsstats.souls),
         ("wins", skywarsstats.wins),
-        ("losses", skywarsstats.losses),    
+        ("losses", skywarsstats.losses),
     ]
 
-async def general(args, player):
+
+async def general(args, player, hypixel: asyncpixel.Hypixel):
     generalstats = player.stats
-    rank = player.rank
+    friends = await hypixel.player_friends(player.uuid)
     return [
-        ("first joined", generalstats.first_joined),
-        ("last joined", generalstats.last_joined),
-        ("karma", generalstats.karma),
-        ("most recent game played", f"{str(player.most_recent_game_type.type_name).lower()}"),
-        ("discord", generalstats.social_media.discord),
-        ("twitter", generalstats.social_media.twitter),
-        ("youtube", generalstats.social_media.youtube)    
+        ("first joined", player.first_login),
+        ("last online", 'now' if player.last_login > player.last_logout else player.last_logout),
+        ("karma", player.karma),
+        ("friends", len(friends) if friends else 0),
+        ("most recent game played", player.most_recent_game_type.clean_name),
+        ("discord", player.social_media.discord),
+        ("twitter", player.social_media.twitter),
+        ("youtube", player.social_media.youtube)
     ]
+
 
 def color_code(color, backupcolor):
-    r,g,b,a = color
+    r, g, b, a = color
     if backupcolor[3]:
-        r,g,b,a = backupcolor
+        r, g, b, a = backupcolor
     return f'\033[38;2;{r};{g};{b}m'
+
+
+def render_stat(arg):
+    if isinstance(arg, datetime.datetime):
+        diff = datetime.datetime.now(tz=datetime.timezone.utc) - arg
+        if diff.days > 30:
+            return f"{arg.day}.{arg.month}.{arg.year}"
+        if diff > datetime.timedelta(hours=24):
+            return f"{diff.days} days ago"
+        if diff > datetime.timedelta(hours=1):
+            return f"{diff.seconds // 60 // 60} hours ago"
+        if diff > datetime.timedelta(minutes=1):
+            return f"{diff.seconds // 60} minutes ago"
+        return f"{diff.seconds} seconds ago"
+    return str(arg)
+
+
+def render_stat_line(stat_line):
+    return f"{stat_line[0]}: {render_stat(stat_line[1])}"
 
 
 async def render_lines(player, username, image, stat_lines):
     image_lines = [
-        ''.join(f'{color_code(image.getpixel((x+8,i+8)), image.getpixel((x+40,i+8)))}██' for x in range(8))
+        ''.join(f'{color_code(image.getpixel((x + 8, i + 8)), image.getpixel((x + 40, i + 8)))}██' for x in range(8))
         for i in range(8)
     ]
 
     print(f"        ({player.rank}) {username}'s Bedwars Stats:")
     for i in range(8):
-        print(f"{image_lines[i]}\033[0m {stat_lines[i] if i < len(stat_lines) else ''}")        
-
+        print(f"{image_lines[i]}\033[0m {render_stat_line(stat_lines[i]) if i < len(stat_lines) else ''}")
 
 
 async def show_fetch(args):
@@ -144,7 +168,7 @@ async def show_fetch(args):
     player = await hypixel.player(playeruuid)
     modecallable = globals().get(args.mode)
     if modecallable:
-        lines = await modecallable(args, player)
+        lines = await modecallable(args=args, player=player, hypixel=hypixel)
         await render_lines(player, username, playerskin, lines)
     else:
         print(f"Unknown mode: {args.mode}")
