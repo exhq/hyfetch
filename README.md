@@ -1,15 +1,19 @@
-# hyfetch
-beta 0.0.1  
-this is a cli tool made to get information about a player in hypixel. it requires your api key which will be requested from you automatically.  
-for now, it just supports bedwars and general information, will add more in future.  
-dependencies:  
--os  
--requests  
--asyncpixel (get it by `pip install asyncpixel`)  
--asyncio  
--sys  
+# Hyfetch - Hypixel in your Terminal
 
-how to use:
-`python ./hyfetch -k <apikey>`  
-(you get your api key by doing "/api new" in hypixel)
-then you can use `python ./hyfetch -h` which will guide you
+Currently, in a sort of beta 0.1: It's usable, but expect shit to change.
+
+![General stats](screenshots/generalstats.png)
+
+## Installation
+
+While we are in the beta, it is better to use `pip install https://github.com/echothegoddess/hyfetch/archive/master.zip`
+directly, instead of relying on pypi.
+
+## Supported game modes
+
+<!-- TODO: Screenshots for all stat pages -->
+
+ - General Stats
+ - Bedwars
+ - Skywars
+ - TODO: Skyblock
