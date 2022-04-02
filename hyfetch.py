@@ -43,6 +43,8 @@ def get_args():
     parser.add_argument('-g', '--general', action='store_const', const='general', dest='mode',
                         help='View general stats')
     parser.add_argument('ign', help='IGN of the player you want to query', nargs='*')
+    parser.add_argument('--sw', '--skywars', action='store_const', const='skywars', dest='mode',
+                        help='View skywars stats')
     return parser.parse_args()
 
 
@@ -77,32 +79,73 @@ async def get_moj_info(session, name):
         return resp['uuid'], resp['username'], image
 
 
+
+
+async def bedwars(args, player):
+    bedwarsstats = player.stats.bedwars
+    rank = player.rank
+    return [
+        ("games played", bedwarsstats.games_played),
+        ("kdr", f"{round(bedwarsstats.kills / bedwarsstats.deaths, 2)} (kills: {bedwarsstats.kills}, deaths: {bedwarsstats.deaths})"),
+        ("fkdr", f"{round(bedwarsstats.final_kills / bedwarsstats.final_deaths, 2)} (final kills: {bedwarsstats.final_kills}, final deaths: {bedwarsstats.final_deaths})"),
+        ("beds broken", bedwarsstats.beds_broken),
+        ("beds lost", bedwarsstats.beds_lost)
+    ]
+
+async def skywars(args, player):
+    skywarsstats = player.stats.skywars
+    rank = player.rank
+    return [
+        ("games played", skywarsstats.games_played),
+        ("kdr", f"{round(skywarsstats.kills / skywarsstats.deaths, 2)} (kills: {skywarsstats.kills}, deaths: {skywarsstats.deaths})"),
+        ("tokens", skywarsstats.tokens ),
+        ("souls: ", skywarsstats.souls),
+        ("wins", skywarsstats.wins),
+        ("losses", skywarsstats.losses),    
+    ]
+
+async def general(args, player):
+    generalstats = player.stats
+    rank = player.rank
+    return [
+        ("first joined", generalstats.first_joined),
+        ("last joined", generalstats.last_joined),
+        ("karma", generalstats.karma),
+        ("most recent game played", f"{str(player.most_recent_game_type.type_name).lower()}"),
+        ("discord", generalstats.social_media.discord),
+        ("twitter", generalstats.social_media.twitter),
+        ("youtube", generalstats.social_media.youtube)    
+    ]
+
+def color_code(color, backupcolor):
+    r,g,b,a = color
+    if backupcolor[3]:
+        r,g,b,a = backupcolor
+    return f'\033[38;2;{r};{g};{b}m'
+
+
+async def render_lines(player, username, image, stat_lines):
+    image_lines = [
+        ''.join(f'{color_code(image.getpixel((x+8,i+8)), image.getpixel((x+40,i+8)))}██' for x in range(8))
+        for i in range(8)
+    ]
+
+    print(f"        ({player.rank}) {username}'s Bedwars Stats:")
+    for i in range(8):
+        print(f"{image_lines[i]}\033[0m {stat_lines[i] if i < len(stat_lines) else ''}")        
+
+
+
 async def show_fetch(args):
     async with aiohttp.ClientSession() as session:
         playeruuid, username, playerskin = await get_moj_info(session, args.ign)
+    playerskin = playerskin.convert(mode="RGBA")
     hypixel = asyncpixel.Hypixel(args.key)
     player = await hypixel.player(playeruuid)
-    if args.mode == 'bedwars':
-        bedwarsstats = player.stats.bedwars
-        rank = player.rank
-        print(f"""
-                ({rank}) {username}'s Bedwars Stats:
-        games played: {bedwarsstats.games_played}
-        kdr: {round(bedwarsstats.kills / bedwarsstats.deaths, 2)} (kills: {bedwarsstats.kills}, deaths: {bedwarsstats.deaths})
-        fkdr: {round(bedwarsstats.final_kills / bedwarsstats.final_deaths, 2)} (final kills: {bedwarsstats.final_kills}, final deaths: {bedwarsstats.final_deaths})        
-        beds broken: {bedwarsstats.beds_broken}
-        beds lost: {bedwarsstats.beds_lost}
-            """)
-    elif args.mode == 'general':
-        print(f"""
-                ({player.rank}) {username}'s General Stats:
-        first joined: {str(player.first_login)[0:19]}
-        last joined: {str(player.last_login)[0:19]}
-        karma: {player.karma}
-        most recent game played: {str(player.most_recent_game_type.type_name).lower()}
-        discord: {player.social_media.discord}
-        twitter: {player.social_media.twitter}
-        youtube: {player.social_media.youtube}""")
+    modecallable = globals().get(args.mode)
+    if modecallable:
+        lines = await modecallable(args, player)
+        await render_lines(player, username, playerskin, lines)
     else:
         print(f"Unknown mode: {args.mode}")
     await hypixel.close()
