@@ -46,8 +46,8 @@ def get_args():
     parser.add_argument('ign', help='IGN of the player you want to query', nargs='*')
     parser.add_argument('--sw', '--skywars', action='store_const', const='skywars', dest='mode',
                         help='View skywars stats')
-    parser.add_argument('--pit', '-p', action='store_const', const='pit', dest='mode',
-                        help='View pit stats')
+    parser.add_argument('--duels', '-d', action='store_const', const='duels', dest='mode',
+                        help='View duels stats')
     return parser.parse_args()
 
 
@@ -87,7 +87,7 @@ async def bedwars(args, player, hypixel):
     rank = player.rank
     if not hasattr(bedwarsstats, 'games_played'):
         return [
-         ("this player has never played pits", "literal")
+         ("this player has never played bedwars", "literal")
         ]
     else:
         return [
@@ -101,17 +101,19 @@ async def bedwars(args, player, hypixel):
         ]
 
 
-async def pit(args, player, hypixel):
-    pitstats = player.stats.pit
+async def duels(args, player, hypixel):
+    duelstats = player.stats.duels
     rank = player.rank
     #check if stats.pits has any attributes
-    if not hasattr(pitstats, 'games_played'):
+    if not hasattr(duelstats, 'coins'):
         return [
-         ("this player has never played pits", "literal")
+         ("this player has never played pit", "literal")
         ]
     else:
         return [
-            ("coins", pitstats.coins),
+            (f"wlr: {duelstats.wins / duelstats.losses} (wins: {duelstats.wins}, losses: {duelstats.losses})", "literal"),
+            ("rounds played", int(duelstats.wins) + int(duelstats.losses)),
+            ("coins", duelstats.coins),
         ]
 
 async def skywars(args, player, hypixel):
@@ -119,7 +121,7 @@ async def skywars(args, player, hypixel):
     rank = player.rank
     if not hasattr(skywarsstats, 'games_played'):
         return [
-         ("this player has never played pits", "literal")
+         ("this player has never played skywars", "literal")
         ]
     else:
         return [
