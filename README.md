@@ -13,7 +13,7 @@ directly, instead of relying on pypi.
 
 ## Supported game modes
 
-<!-- TODO: Screenshots for all stat pages -->
+
 
  - General Stats
  - Bedwars
