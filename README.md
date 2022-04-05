@@ -2,7 +2,9 @@
 
 Currently, in a sort of beta 0.1: It's usable, but expect shit to change.
 
-![General stats](screenshots/generalstats.png)
+![General stats](screenshots/generalstats.png)  
+![bedwars stats](screenshots/bedwarsstarts.png)  
+![duels stats](screenshots/duelsstats.png)  
 
 ## Installation
 
